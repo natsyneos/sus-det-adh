@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
-import bgImage from 'figma:asset/033b0a9678b326af3e1307879cea8820c2f1418b.png';
+import bgImage from '../../assets/033b0a9678b326af3e1307879cea8820c2f1418b.png';
 
 interface LandingScreenProps {
   onTopicSelect: (topic: string) => void;
