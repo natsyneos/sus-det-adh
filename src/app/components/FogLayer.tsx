@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -10,8 +10,7 @@ interface FogShaderProps {
 
 function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const { size } = useThree();
-  const timeRef = useRef(0);
+  const { size, camera } = useThree();
 
   const uniforms = useMemo(() => ({
     u_time: { value: 0 },
@@ -20,10 +19,16 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
     u_spotlightRadius: { value: spotlightRadius },
   }), []);
 
-  useFrame((_, delta) => {
-    timeRef.current += delta * 0.3;
-    uniforms.u_time.value = timeRef.current;
+  useEffect(() => {
     uniforms.u_resolution.value.set(size.width, size.height);
+    // Resize plane to always fill screen
+    if (meshRef.current) {
+      meshRef.current.scale.set(size.width, size.height, 1);
+    }
+  }, [size]);
+
+  useFrame((_, delta) => {
+    uniforms.u_time.value += delta * 0.25;
     uniforms.u_spotlight.value.set(spotlightX, size.height - spotlightY);
     uniforms.u_spotlightRadius.value = spotlightRadius;
   });
@@ -43,13 +48,11 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
     uniform float u_spotlightRadius;
     varying vec2 vUv;
 
-    // Hash function
     vec2 hash(vec2 p) {
       p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
       return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
     }
 
-    // Gradient noise
     float noise(vec2 p) {
       vec2 i = floor(p);
       vec2 f = fract(p);
@@ -61,7 +64,6 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
             dot(hash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0)), u.x), u.y);
     }
 
-    // Fractional Brownian Motion — layered noise for organic look
     float fbm(vec2 p) {
       float value = 0.0;
       float amplitude = 0.5;
@@ -78,7 +80,6 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
       vec2 uv = vUv;
       vec2 pixelPos = uv * u_resolution;
 
-      // Animated fog using layered fbm
       vec2 q = vec2(
         fbm(uv * 2.5 + vec2(0.0, u_time * 0.12)),
         fbm(uv * 2.5 + vec2(1.7, u_time * 0.10))
@@ -92,7 +93,6 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
       float f = fbm(uv * 2.5 + 4.0 * r);
       f = f * 0.5 + 0.5;
 
-      // Spotlight displacement
       float dist = length(pixelPos - u_spotlight);
       float repelZone = u_spotlightRadius * 1.6;
       float spotlightMask = 1.0;
@@ -100,8 +100,6 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
       if (dist < repelZone) {
         float falloff = 1.0 - smoothstep(0.0, repelZone, dist);
         spotlightMask = 1.0 - pow(falloff, 1.5);
-        
-        // Warp UVs near spotlight for swirl
         vec2 dir = normalize(pixelPos - u_spotlight);
         vec2 tangent = vec2(-dir.y, dir.x);
         float warpStrength = (1.0 - dist / repelZone) * 0.15;
@@ -110,14 +108,13 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
         f *= spotlightMask;
       }
 
-      // Color — cool blue-grey fog tones
       vec3 fogColor = mix(
         vec3(0.65, 0.70, 0.80),
         vec3(0.80, 0.85, 0.90),
         f
       );
 
-      float alpha = f * 0.38 * spotlightMask;
+      float alpha = f * 0.42 * spotlightMask;
       alpha = clamp(alpha, 0.0, 1.0);
 
       gl_FragColor = vec4(fogColor, alpha);
@@ -133,8 +130,9 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
   }), []);
 
   return (
-    <mesh ref={meshRef} material={material}>
-      <planeGeometry args={[2, 2]} />
+    <mesh ref={meshRef}>
+      <planeGeometry args={[1, 1]} />
+      <primitive object={material} attach="material" />
     </mesh>
   );
 }
@@ -156,14 +154,14 @@ export function FogLayer({ spotlightX, spotlightY, spotlightRadius = 280, lights
     >
       <Canvas
         orthographic
-        camera={{ zoom: 1, position: [0, 0, 1] }}
+        camera={{ position: [0, 0, 100], near: 0.1, far: 1000 }}
         gl={{ alpha: true, antialias: false }}
         style={{ background: 'transparent' }}
       >
         <FogMesh
           spotlightX={spotlightX}
           spotlightY={spotlightY}
-          spotlightRadius={spotlightRadius ?? 280}
+          spotlightRadius={spotlightRadius}
         />
       </Canvas>
     </div>
