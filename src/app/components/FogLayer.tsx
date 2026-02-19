@@ -1,16 +1,5 @@
 import { useEffect, useRef } from 'react';
 
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  homeX: number;
-  homeY: number;
-  radius: number;
-  baseOpacity: number;
-}
-
 interface FogLayerProps {
   spotlightX: number;
   spotlightY: number;
@@ -20,10 +9,10 @@ interface FogLayerProps {
 
 export function FogLayer({ spotlightX, spotlightY, spotlightRadius = 280, lightsOn }: FogLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
   const animFrameRef = useRef<number>(0);
   const spotlightRef = useRef({ x: spotlightX, y: spotlightY });
   const lightsOnRef = useRef(lightsOn);
+  const timeRef = useRef(0);
 
   useEffect(() => {
     spotlightRef.current = { x: spotlightX, y: spotlightY };
@@ -46,82 +35,122 @@ export function FogLayer({ spotlightX, spotlightY, spotlightRadius = 280, lights
     resize();
     window.addEventListener('resize', resize);
 
-    const count = 120;
-    particlesRef.current = Array.from({ length: count }, () => {
+    // Noise function — smooth pseudo-random
+    const noise = (x: number, y: number, t: number) => {
+      const X = Math.floor(x) & 255;
+      const Y = Math.floor(y) & 255;
+      const T = Math.floor(t) & 255;
+      return (
+        Math.sin(X * 0.1 + T * 0.05) *
+        Math.cos(Y * 0.1 + T * 0.03) *
+        Math.sin((X + Y) * 0.07 + T * 0.04)
+      );
+    };
+
+    // Smoke puff structure
+    interface Puff {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      homeX: number;
+      homeY: number;
+      size: number;
+      opacity: number;
+      noiseOffsetX: number;
+      noiseOffsetY: number;
+      rotation: number;
+      rotationSpeed: number;
+    }
+
+    const puffs: Puff[] = Array.from({ length: 80 }, () => {
       const x = Math.random() * window.innerWidth;
       const y = Math.random() * window.innerHeight;
       return {
         x,
         y,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.2,
         homeX: x,
         homeY: y,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.2,
-        radius: Math.random() * 180 + 120,
-        baseOpacity: Math.random() * 0.07 + 0.04,
+        size: Math.random() * 220 + 140,
+        opacity: Math.random() * 0.09 + 0.04,
+        noiseOffsetX: Math.random() * 100,
+        noiseOffsetY: Math.random() * 100,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.003,
       };
     });
 
     const draw = () => {
       if (!canvas || !ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      timeRef.current += 0.008;
+      const t = timeRef.current;
 
       if (!lightsOnRef.current) {
         const sx = spotlightRef.current.x;
         const sy = spotlightRef.current.y;
-        const repelZone = spotlightRadius * 1.5;
+        const repelZone = spotlightRadius * 1.8;
 
-        particlesRef.current.forEach(p => {
+        puffs.forEach(p => {
+          // Noise-driven organic drift
+          const nx = noise(p.noiseOffsetX + t, p.noiseOffsetY, t * 0.5);
+          const ny = noise(p.noiseOffsetX, p.noiseOffsetY + t, t * 0.5);
+          p.vx += nx * 0.06;
+          p.vy += ny * 0.04;
+
+          // Spotlight repulsion with swirl
           const dx = p.x - sx;
           const dy = p.y - sy;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          // Repulsion force — pushes radially outward
           if (dist < repelZone && dist > 0) {
-            const force = (1 - dist / repelZone) * 3.5;
-            const nx = dx / dist;
-            const ny = dy / dist;
-
-            // Tangential component for swirl — perpendicular to radial
-            const tx = -ny;
-            const ty = nx;
-
-            p.vx += nx * force + tx * force * 0.6;
-            p.vy += ny * force + ty * force * 0.6;
+            const force = Math.pow(1 - dist / repelZone, 1.5) * 4.0;
+            const nx2 = dx / dist;
+            const ny2 = dy / dist;
+            // Tangential swirl component
+            const tx = -ny2;
+            const ty = nx2;
+            p.vx += nx2 * force + tx * force * 0.8;
+            p.vy += ny2 * force + ty * force * 0.8;
           }
 
-          // Gentle return toward home position
-          const homeDx = p.homeX - p.x;
-          const homeDy = p.homeY - p.y;
-          p.vx += homeDx * 0.0008;
-          p.vy += homeDy * 0.0008;
-
-          // Base drift
-          p.vx += (Math.random() - 0.5) * 0.02;
-          p.vy += (Math.random() - 0.5) * 0.02;
+          // Slow return to home
+          p.vx += (p.homeX - p.x) * 0.0006;
+          p.vy += (p.homeY - p.y) * 0.0006;
 
           // Dampen
-          p.vx *= 0.97;
-          p.vy *= 0.97;
+          p.vx *= 0.96;
+          p.vy *= 0.96;
 
           p.x += p.vx;
           p.y += p.vy;
+          p.rotation += p.rotationSpeed;
 
-          // Opacity — fade inside spotlight
-          let opacity = p.baseOpacity;
+          // Opacity fade inside spotlight
+          let opacity = p.opacity;
           if (dist < spotlightRadius) {
-            opacity = p.baseOpacity * Math.pow(dist / spotlightRadius, 1.5);
+            opacity = p.opacity * Math.pow(dist / spotlightRadius, 2);
           }
 
-          const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-          gradient.addColorStop(0, `rgba(200, 210, 225, ${opacity})`);
-          gradient.addColorStop(0.4, `rgba(200, 210, 225, ${opacity * 0.5})`);
-          gradient.addColorStop(1, `rgba(200, 210, 225, 0)`);
+          // Draw as rotated ellipse for more organic smoke shape
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
 
+          const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
+          gradient.addColorStop(0, `rgba(210, 218, 230, ${opacity})`);
+          gradient.addColorStop(0.3, `rgba(200, 210, 225, ${opacity * 0.7})`);
+          gradient.addColorStop(0.7, `rgba(190, 200, 220, ${opacity * 0.3})`);
+          gradient.addColorStop(1, `rgba(190, 200, 220, 0)`);
+
+          ctx.scale(1, 0.55); // Flatten into horizontal wisps
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.arc(0, 0, p.size, 0, Math.PI * 2);
           ctx.fillStyle = gradient;
           ctx.fill();
+          ctx.restore();
         });
       }
 
@@ -140,7 +169,7 @@ export function FogLayer({ spotlightX, spotlightY, spotlightRadius = 280, lights
     <canvas
       ref={canvasRef}
       className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 2, opacity: 0.85 }}
+      style={{ zIndex: 2, opacity: 0.9 }}
     />
   );
 }
