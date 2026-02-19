@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import bgImage from '../../assets/033b0a9678b326af3e1307879cea8820c2f1418b.png';
+import { FogLayer } from './FogLayer';
 
 interface LandingScreenProps {
   onTopicSelect: (topic: string) => void;
@@ -101,12 +102,11 @@ export function LandingScreen({ onTopicSelect, lightsOn, onToggleLights }: Landi
         <img src={bgImage} alt="" className="w-full h-full object-cover" />
       </div>
 
-      {/* Animated fog overlay */}
-      {!lightsOn && (
-        <div className="absolute inset-0 opacity-30 z-[1]">
-          <div className="fog-layer"></div>
-        </div>
-      )}
+      <FogLayer
+        spotlightX={mousePosition.x}
+        spotlightY={mousePosition.y}
+        lightsOn={lightsOn}
+      />
 
       {/* Spotlight overlay effect */}
       {!lightsOn && (
