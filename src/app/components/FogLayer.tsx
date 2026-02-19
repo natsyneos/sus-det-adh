@@ -5,6 +5,8 @@ interface Particle {
   y: number;
   vx: number;
   vy: number;
+  homeX: number;
+  homeY: number;
   radius: number;
   baseOpacity: number;
 }
@@ -44,80 +46,84 @@ export function FogLayer({ spotlightX, spotlightY, spotlightRadius = 280, lights
     resize();
     window.addEventListener('resize', resize);
 
-    // Large overlapping particles for unified fog look
     const count = 120;
-    particlesRef.current = Array.from({ length: count }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.15,
-      radius: Math.random() * 180 + 120,
-      baseOpacity: Math.random() * 0.07 + 0.04,
-    }));
+    particlesRef.current = Array.from({ length: count }, () => {
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * window.innerHeight;
+      return {
+        x,
+        y,
+        homeX: x,
+        homeY: y,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.2,
+        radius: Math.random() * 180 + 120,
+        baseOpacity: Math.random() * 0.07 + 0.04,
+      };
+    });
 
     const draw = () => {
       if (!canvas || !ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (lightsOnRef.current) {
-        animFrameRef.current = requestAnimationFrame(draw);
-        return;
+      if (!lightsOnRef.current) {
+        const sx = spotlightRef.current.x;
+        const sy = spotlightRef.current.y;
+        const repelZone = spotlightRadius * 1.5;
+
+        particlesRef.current.forEach(p => {
+          const dx = p.x - sx;
+          const dy = p.y - sy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          // Repulsion force — pushes radially outward
+          if (dist < repelZone && dist > 0) {
+            const force = (1 - dist / repelZone) * 3.5;
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            // Tangential component for swirl — perpendicular to radial
+            const tx = -ny;
+            const ty = nx;
+
+            p.vx += nx * force + tx * force * 0.6;
+            p.vy += ny * force + ty * force * 0.6;
+          }
+
+          // Gentle return toward home position
+          const homeDx = p.homeX - p.x;
+          const homeDy = p.homeY - p.y;
+          p.vx += homeDx * 0.003;
+          p.vy += homeDy * 0.003;
+
+          // Base drift
+          p.vx += (Math.random() - 0.5) * 0.02;
+          p.vy += (Math.random() - 0.5) * 0.02;
+
+          // Dampen
+          p.vx *= 0.94;
+          p.vy *= 0.94;
+
+          p.x += p.vx;
+          p.y += p.vy;
+
+          // Opacity — fade inside spotlight
+          let opacity = p.baseOpacity;
+          if (dist < spotlightRadius) {
+            opacity = p.baseOpacity * Math.pow(dist / spotlightRadius, 1.5);
+          }
+
+          const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+          gradient.addColorStop(0, `rgba(200, 210, 225, ${opacity})`);
+          gradient.addColorStop(0.4, `rgba(200, 210, 225, ${opacity * 0.5})`);
+          gradient.addColorStop(1, `rgba(200, 210, 225, 0)`);
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        });
       }
-
-      const sx = spotlightRef.current.x;
-      const sy = spotlightRef.current.y;
-      const repelZone = spotlightRadius * 1.6;
-      const repelStrength = 4.5;
-
-      particlesRef.current.forEach(p => {
-        // Drift
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Wrap edges softly
-        if (p.x < -p.radius) p.x = canvas.width + p.radius;
-        if (p.x > canvas.width + p.radius) p.x = -p.radius;
-        if (p.y < -p.radius) p.y = canvas.height + p.radius;
-        if (p.y > canvas.height + p.radius) p.y = -p.radius;
-
-        // Spotlight repulsion
-        const dx = p.x - sx;
-        const dy = p.y - sy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < repelZone && dist > 0) {
-          const force = (1 - dist / repelZone) * repelStrength;
-          p.x += (dx / dist) * force;
-          p.y += (dy / dist) * force;
-          // Add some lateral scatter for more natural displacement
-          p.vx += (dx / dist) * force * 0.04;
-          p.vy += (dy / dist) * force * 0.04;
-        }
-
-        // Dampen velocity so particles don't fly off forever
-        p.vx *= 0.98;
-        p.vy *= 0.98;
-        // Restore base drift if too slow
-        if (Math.abs(p.vx) < 0.1) p.vx += (Math.random() - 0.5) * 0.05;
-        if (Math.abs(p.vy) < 0.06) p.vy += (Math.random() - 0.5) * 0.03;
-
-        // Opacity fades to zero inside spotlight
-        let opacity = p.baseOpacity;
-        if (dist < spotlightRadius) {
-          opacity = p.baseOpacity * Math.pow(dist / spotlightRadius, 2);
-        }
-
-        // Large soft radial gradient blob
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-        gradient.addColorStop(0, `rgba(200, 210, 225, ${opacity})`);
-        gradient.addColorStop(0.4, `rgba(200, 210, 225, ${opacity * 0.6})`);
-        gradient.addColorStop(1, `rgba(200, 210, 225, 0)`);
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-      });
 
       animFrameRef.current = requestAnimationFrame(draw);
     };
