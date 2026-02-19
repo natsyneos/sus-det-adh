@@ -26,16 +26,16 @@ const quizDataMap: Record<string, QuizData> = {
       { text: "A condition caused by low calcium intake", correct: false },
       { text: "An autoimmune form of hypoparathyroidism", correct: false }
     ],
-    explanation: "In ADH1, overactive calcium-sensing receptor (CaSR) causes dysregulation of calcium homeostasis."
+    explanation: "In ADH1, over-sensitive calcium-sensing receptor (CaSR) causes dysregulation of calcium homeostasis."
   },
   "Mechanism of Disease": {
     question: "Which statement describes how the mechanism of disease in ADH1 is distinct from other forms of hypoparathyroidism?",
     answers: [
       { text: "ADH1 is solely a kidney-related condition.", correct: false },
       { text: "ADH1 is caused by parathyroid gland injury.", correct: false },
-      { text: "In ADH1, the body misreads calcium levels due to malfunction of the CASR gene.", correct: true }
+      { text: "In ADH1, the body misreads calcium levels due to malfunction of the CaSR protein.", correct: true }
     ],
-    explanation: "In ADH1, the calcium-sensing receptor is too sensitive, 'tricking' the body into believing low calcium levels are normal or high. As a result, PTH production decreases and the kidneys spill excess calcium."
+    explanation: "In ADH1, the calcium sensing receptor is too sensitive, \"tricking\" the body into believing low levels of calcium in the blood are normal, or normal levels are too high. As a result, the parathyroid glands don't produce enough parathyroid hormone, and the kidneys excrete too much calcium into the urine."
   },
   "Average Time to Diagnosis": {
     question: "True or False: ADH1 is typically diagnosed at birth.",
@@ -61,7 +61,7 @@ const quizDataMap: Record<string, QuizData> = {
       { text: "Parathyroid hormone (PTH) test and 24-hour urine test", correct: false },
       { text: "Genetic testing", correct: true }
     ],
-    explanation: "Genetic testing of the calcium-sensing receptor gene (CASR) can confirm a diagnosis of ADH1."
+    explanation: "Genetic testing of the calcium-sensing receptor gene (CASR) is the only way to confirm a diagnosis of ADH1."
   },
   "Limitations of Conventional Therapy": {
     question: "True or False: Conventional therapy for hypoparathyroidism (calcium supplements and activated Vitamin D) also effectively treats ADH1.",
@@ -69,7 +69,7 @@ const quizDataMap: Record<string, QuizData> = {
       { text: "True", correct: false },
       { text: "False", correct: true }
     ],
-    explanation: "Conventional therapy does not address the underlying CaSR dysfunction in ADH1. It may exacerbate hypercalciuria and contribute to long-term renal complications such as kidney stones, calcification, and kidney failure."
+    explanation: "Conventional therapy does not address the continued dysfunction in the kidneys. Without addressing the underlying issue, conventional therapy may exacerbate hypercalciuria and lead to long-term renal complications, such as kidney stones, kidney calcification, and kidney failure. Serum calcium may not be controlled either."
   }
 };
 

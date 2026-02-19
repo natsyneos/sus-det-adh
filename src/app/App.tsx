@@ -9,8 +9,8 @@ type Screen = 'landing' | 'quiz' | 'final';
 const topics = [
   "What Is ADH1?",
   "Mechanism of Disease",
-  "Average Time to Diagnosis",
   "Clinical Presentation",
+  "Average Time to Diagnosis",
   "Confirming Diagnosis",
   "Limitations of Conventional Therapy"
 ];
