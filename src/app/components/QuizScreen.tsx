@@ -8,6 +8,8 @@ interface QuizScreenProps {
   onComplete: () => void;
   onNext: () => void;
   onBackToStart: () => void;
+  lightsOn: boolean;
+  onToggleLights: () => void;
 }
 
 interface QuizData {
@@ -71,15 +73,41 @@ const quizDataMap: Record<string, QuizData> = {
   }
 };
 
-export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScreenProps) {
+export function QuizScreen({ topic, onComplete, onNext, onBackToStart, lightsOn, onToggleLights }: QuizScreenProps) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [isUserControlling, setIsUserControlling] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const roamAnimRef = useRef<number>(0);
 
-  // Track mouse position for flashlight effect
+  // Roaming spotlight animation
   useEffect(() => {
+    if (lightsOn || selectedAnswer) return;
+
+    const animate = (now: number) => {
+      const elapsed = now / 1000;
+      if (!isUserControlling && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const x = cx + Math.sin(elapsed * 0.4) * cx * 0.55;
+        const y = cy + Math.cos(elapsed * 0.27) * cy * 0.5;
+        setMousePosition({ x, y });
+      }
+      roamAnimRef.current = requestAnimationFrame(animate);
+    };
+
+    roamAnimRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(roamAnimRef.current);
+  }, [isUserControlling, lightsOn, selectedAnswer]);
+
+  // Track mouse for user control
+  useEffect(() => {
+    if (lightsOn || selectedAnswer) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
@@ -88,51 +116,50 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
           y: e.clientY - rect.top
         });
       }
+      setIsUserControlling(true);
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = setTimeout(() => {
+        setIsUserControlling(false);
+      }, 2000);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [lightsOn, selectedAnswer]);
 
-  // Cleanup timer on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (autoAdvanceTimerRef.current) {
-        clearTimeout(autoAdvanceTimerRef.current);
-      }
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      cancelAnimationFrame(roamAnimRef.current);
     };
   }, []);
 
   const handleAnswerSelect = (answer: string) => {
     if (!selectedAnswer) {
       setSelectedAnswer(answer);
-      setTimeout(() => {
-        setShowExplanation(true);
-      }, 600);
-      
-      // Auto advance to CTA after 6 seconds (but can be interrupted by button clicks)
-      autoAdvanceTimerRef.current = setTimeout(() => {
-        onComplete();
-      }, 6000);
+      setTimeout(() => setShowExplanation(true), 600);
+      autoAdvanceTimerRef.current = setTimeout(() => onComplete(), 6000);
     }
   };
 
   const handleNextClick = () => {
-    if (autoAdvanceTimerRef.current) {
-      clearTimeout(autoAdvanceTimerRef.current);
-    }
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     onNext();
   };
 
   const handleBackClick = () => {
-    if (autoAdvanceTimerRef.current) {
-      clearTimeout(autoAdvanceTimerRef.current);
-    }
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     onBackToStart();
   };
 
   const quizData = quizDataMap[topic];
   const answers = quizData ? quizData.answers : [];
+  const showSpotlight = !lightsOn && !selectedAnswer;
 
   return (
     <motion.div
@@ -145,19 +172,17 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
     >
       {/* Full-bleed background image */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src={bgImage} 
-          alt="" 
-          className="w-full h-full object-cover"
-        />
+        <img src={bgImage} alt="" className="w-full h-full object-cover" />
       </div>
 
       {/* Animated fog overlay */}
-      <div className="absolute inset-0 opacity-40 z-[1]">
-        <div className="fog-layer"></div>
-      </div>
+      {!lightsOn && (
+        <div className="absolute inset-0 opacity-40 z-[1]">
+          <div className="fog-layer"></div>
+        </div>
+      )}
 
-      {/* Close button in top right */}
+      {/* Close button */}
       <motion.button
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -170,9 +195,9 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
         <X className="w-6 h-6 text-gray-300 group-hover:text-white transition-colors duration-400" />
       </motion.button>
 
-      {/* Spotlight overlay effect */}
-      {!selectedAnswer && (
-        <div 
+      {/* Spotlight overlay */}
+      {showSpotlight && (
+        <div
           className="absolute inset-0 pointer-events-none z-20"
           style={{
             background: `radial-gradient(circle 280px at ${mousePosition.x}px ${mousePosition.y}px, 
@@ -205,11 +230,7 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
               <motion.button
                 key={answer.text}
                 initial={{ y: 20, opacity: 0 }}
-                animate={{ 
-                  y: 0, 
-                  opacity: shouldDim ? 0.3 : 1,
-                  scale: isSelected ? 1.02 : 1
-                }}
+                animate={{ y: 0, opacity: shouldDim ? 0.3 : 1, scale: isSelected ? 1.02 : 1 }}
                 transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
                 onClick={() => handleAnswerSelect(answer.text)}
                 disabled={!!selectedAnswer}
@@ -222,7 +243,6 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                            ${!isSelected ? 'border-[#3a3a3e]' : ''}
                 `}
               >
-                {/* Glow effect for correct answer */}
                 {isSelected && isCorrect && (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -231,8 +251,6 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                     className="absolute inset-0 bg-gradient-to-r from-[#FFC358]/20 via-[#FFC358]/10 to-transparent"
                   />
                 )}
-                
-                {/* Glow effect for incorrect answer */}
                 {isSelected && !isCorrect && (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -241,10 +259,8 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                     className="absolute inset-0 bg-gradient-to-r from-[#d64545]/20 via-[#d64545]/10 to-transparent"
                   />
                 )}
-                
-                {/* Inner spotlight for unselected state */}
                 {!selectedAnswer && (
-                  <div 
+                  <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
                       background: `radial-gradient(circle 200px at ${mousePosition.x - (containerRef.current?.getBoundingClientRect().left || 0)}px ${mousePosition.y - (containerRef.current?.getBoundingClientRect().top || 0)}px, 
@@ -253,7 +269,6 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                     }}
                   />
                 )}
-                
                 <span className="relative z-10">{answer.text}</span>
               </motion.button>
             );
@@ -273,8 +288,6 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
               <p className="text-2xl font-bold text-[#FFC358] leading-relaxed mb-12 text-left">
                 {quizData ? quizData.explanation : "There is a 20-plus-year gap between median age of diagnosis for hypocalcemia-related disorder (4 years) and genetic confirmation of ADH1 (25 years)."}
               </p>
-
-              {/* Navigation buttons */}
               <div className="flex items-center justify-center gap-6 mt-8">
                 <motion.button
                   initial={{ opacity: 0, y: 10 }}
@@ -282,20 +295,26 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                   transition={{ delay: 0.3, duration: 0.5 }}
                   onClick={handleNextClick}
                   className="group relative bg-[#FFC358] border border-[#FFC358] rounded-lg px-10 py-4
-                             text-[#1a1a1c] hover:bg-[#ffce75] transition-all duration-400
-                             overflow-hidden"
+                             text-[#1a1a1c] hover:bg-[#ffce75] transition-all duration-400 overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent 
                                   opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
-                  <span className="relative z-10 text-lg font-normal tracking-wide">
-                    Next Question
-                  </span>
+                  <span className="relative z-10 text-lg font-normal tracking-wide">Next Question</span>
                 </motion.button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Lights On toggle */}
+      <button
+        onClick={onToggleLights}
+        className="absolute bottom-6 left-8 z-50 text-xs font-light tracking-widest uppercase opacity-40 hover:opacity-80 transition-opacity duration-300 text-white flex items-center gap-2"
+      >
+        <span className={`inline-block w-2 h-2 rounded-full border border-white ${lightsOn ? 'bg-white' : 'bg-transparent'}`}></span>
+        {lightsOn ? 'Lights Off' : 'Lights On'}
+      </button>
     </motion.div>
   );
 }

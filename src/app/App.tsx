@@ -20,6 +20,7 @@ export default function App() {
   const [selectedTopic, setSelectedTopic] = useState<string>('');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [lightsOn, setLightsOn] = useState(false);
 
   const handleTopicSelect = (topic: string) => {
     setIsTransitioning(true);
@@ -40,7 +41,6 @@ export default function App() {
       setSelectedTopic(topics[nextIndex]);
       setCurrentQuestionIndex(nextIndex);
     } else {
-      // Cycle back to first question or go to final
       setCurrentScreen('final');
     }
   };
@@ -77,15 +77,22 @@ export default function App() {
 
       <AnimatePresence mode="wait">
         {currentScreen === 'landing' && (
-          <LandingScreen key="landing" onTopicSelect={handleTopicSelect} />
+          <LandingScreen
+            key="landing"
+            onTopicSelect={handleTopicSelect}
+            lightsOn={lightsOn}
+            onToggleLights={() => setLightsOn(prev => !prev)}
+          />
         )}
         {currentScreen === 'quiz' && (
-          <QuizScreen 
-            key={`quiz-${currentQuestionIndex}`} 
-            topic={selectedTopic} 
+          <QuizScreen
+            key={`quiz-${currentQuestionIndex}`}
+            topic={selectedTopic}
             onComplete={handleQuizComplete}
             onNext={handleNextQuestion}
             onBackToStart={handleBackToStart}
+            lightsOn={lightsOn}
+            onToggleLights={() => setLightsOn(prev => !prev)}
           />
         )}
         {currentScreen === 'final' && (
