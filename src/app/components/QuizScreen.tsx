@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
-import bgImage from 'figma:asset/033b0a9678b326af3e1307879cea8820c2f1418b.png';
+import bgImage from '../../assets/033b0a9678b326af3e1307879cea8820c2f1418b.png';
 
 interface QuizScreenProps {
   topic: string;
