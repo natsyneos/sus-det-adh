@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import bgImage from 'figma:asset/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
+import bgImage from '../../assets/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
 
 interface FinalScreenProps {
   onRestart: () => void;
