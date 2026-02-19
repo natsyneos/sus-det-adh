@@ -93,16 +93,16 @@ export function FogLayer({ spotlightX, spotlightY, spotlightRadius = 280, lights
           // Gentle return toward home position
           const homeDx = p.homeX - p.x;
           const homeDy = p.homeY - p.y;
-          p.vx += homeDx * 0.003;
-          p.vy += homeDy * 0.003;
+          p.vx += homeDx * 0.0008;
+          p.vy += homeDy * 0.0008;
 
           // Base drift
           p.vx += (Math.random() - 0.5) * 0.02;
           p.vy += (Math.random() - 0.5) * 0.02;
 
           // Dampen
-          p.vx *= 0.94;
-          p.vy *= 0.94;
+          p.vx *= 0.97;
+          p.vy *= 0.97;
 
           p.x += p.vx;
           p.y += p.vy;
