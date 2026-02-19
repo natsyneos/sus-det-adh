@@ -21,7 +21,6 @@ export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [isUserControlling, setIsUserControlling] = useState(false);
-  const [lightsOn, setLightsOn] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const roamAnimRef = useRef<number>(0);
