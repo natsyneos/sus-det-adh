@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import bgImage from 'figma:asset/bf8f2b863e3bdcc5b498287cc66cff8fb490e1d4.png';
+import bgImage from '../../assets/bf8f2b863e3bdcc5b498287cc66cff8fb490e1d4.png';
 import Layer1 from '../../imports/Layer1';
 import Layer11493 from '../../imports/Layer1-14-93';
 
