@@ -99,22 +99,22 @@ function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
 
       if (dist < repelZone) {
         float falloff = 1.0 - smoothstep(0.0, repelZone, dist);
-        spotlightMask = 1.0 - pow(falloff, 1.5);
+        spotlightMask = 1.0 - pow(falloff, 0.6);
         vec2 dir = normalize(pixelPos - u_spotlight);
         vec2 tangent = vec2(-dir.y, dir.x);
-        float warpStrength = (1.0 - dist / repelZone) * 0.15;
+        float warpStrength = (1.0 - dist / repelZone) * 0.45;
         f = fbm((uv + tangent * warpStrength) * 2.5 + 4.0 * r);
         f = f * 0.5 + 0.5;
         f *= spotlightMask;
       }
 
       vec3 fogColor = mix(
-        vec3(0.65, 0.70, 0.80),
-        vec3(0.80, 0.85, 0.90),
-        f
-      );
+  vec3(0.75, 0.75, 0.75),
+  vec3(0.92, 0.92, 0.92),
+  f
+);
 
-      float alpha = f * 0.42 * spotlightMask;
+      float alpha = f * 0.55 * spotlightMask;
       alpha = clamp(alpha, 0.0, 1.0);
 
       gl_FragColor = vec4(fogColor, alpha);
