@@ -93,8 +93,8 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart, lightsOn,
         const rect = containerRef.current.getBoundingClientRect();
         const cx = rect.width / 2;
         const cy = rect.height / 2;
-        const x = cx + Math.sin(elapsed * 0.4) * cx * 0.55;
-        const y = cy + Math.cos(elapsed * 0.27) * cy * 0.5;
+        const x = cx + Math.sin(elapsed * 0.6) * cx * 0.55;
+        const y = cy + Math.cos(elapsed * 0.4) * cy * 0.5;
         setMousePosition({ x, y });
       }
       roamAnimRef.current = requestAnimationFrame(animate);

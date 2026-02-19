@@ -41,8 +41,8 @@ export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
         const cx = rect.width / 2;
         const cy = rect.height / 2;
         // Lissajous-style roam pattern
-        const x = cx + Math.sin(elapsed * 0.4) * cx * 0.55;
-        const y = cy + Math.cos(elapsed * 0.27) * cy * 0.5;
+        const x = cx + Math.sin(elapsed * 0.6) * cx * 0.55;
+        const y = cy + Math.cos(elapsed * 0.4) * cy * 0.5;
         roamPositionRef.current = { x, y };
         setMousePosition({ x, y });
       }
