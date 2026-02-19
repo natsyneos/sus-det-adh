@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
-import bgImage from '../../assets/033b0a9678b326af3e1307879cea8820c2f1418b.png';
+import bgImage from 'figma:asset/033b0a9678b326af3e1307879cea8820c2f1418b.png';
 
 interface LandingScreenProps {
   onTopicSelect: (topic: string) => void;
@@ -9,7 +9,7 @@ interface LandingScreenProps {
 const topics = [
   "What Is ADH1?",
   "Mechanism of Disease",
-  "Average Diagnostic Time",
+  "Average Time to Diagnosis",
   "Clinical Presentation",
   "Confirming Diagnosis",
   "Limitations of Conventional Therapy"
@@ -74,7 +74,7 @@ export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
           background: `radial-gradient(circle 280px at ${mousePosition.x}px ${mousePosition.y}px, 
                        transparent 0%, 
                        transparent 40%, 
-                       rgba(26, 26, 28, 0.7) 100%)`
+                       rgba(0, 0, 0, 0.7) 100%)`
         }}
       />
 
@@ -84,11 +84,21 @@ export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
           initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="text-6xl font-light tracking-wide mb-20 text-center"
+          className="text-6xl font-light tracking-wide mb-6 text-center"
         >
           <span className="text-white">SUSPECT & </span>
           <span className="text-[#FFC358] font-bold">DETECT ADH1</span>
         </motion.h1>
+
+        {/* Subhead */}
+        <motion.p
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="text-xl font-light tracking-wide text-gray-300 text-center mb-20"
+        >
+          Tap a category to join the ADH1 awareness movement
+        </motion.p>
 
         {/* Topic grid */}
         <div className="grid grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -106,10 +116,7 @@ export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
                 }}
                 transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
                 onClick={() => handleTopicClick(topic)}
-                className={`group relative bg-[#252528] border rounded-lg px-8 py-12 
-                           text-white hover:border-[#5a5a5e] transition-all duration-400
-                           hover:bg-[#2a2a2e] overflow-hidden z-30
-                           ${isActive ? 'border-[#d4a574]' : 'border-[#3a3a3e]'}`}
+                className={`group relative bg-[#252528] border rounded-lg px-8 py-12 \n                           text-white hover:border-[#5a5a5e] transition-all duration-400\n                           hover:bg-[#2a2a2e] overflow-hidden z-30\n                           ${isActive ? 'border-[#FFC358]' : 'border-[#3a3a3e]'}`}
               >
                 {/* Amber glow on press/active */}
                 {isActive && (
@@ -117,7 +124,7 @@ export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.4 }}
-                    className="absolute inset-0 bg-gradient-to-r from-[#d4a574]/20 via-[#d4a574]/10 to-transparent"
+                    className="absolute inset-0 bg-gradient-to-r from-[#FFC358]/20 via-[#FFC358]/10 to-transparent"
                   />
                 )}
                 

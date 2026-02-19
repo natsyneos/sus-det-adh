@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
-import bgImage from '../../assets/033b0a9678b326af3e1307879cea8820c2f1418b.png';
+import bgImage from 'figma:asset/033b0a9678b326af3e1307879cea8820c2f1418b.png';
 
 interface QuizScreenProps {
   topic: string;
@@ -35,12 +35,11 @@ const quizDataMap: Record<string, QuizData> = {
     ],
     explanation: "In ADH1, the calcium-sensing receptor is too sensitive, 'tricking' the body into believing low calcium levels are normal or high. As a result, PTH production decreases and the kidneys spill excess calcium."
   },
-  "Average Diagnostic Time": {
-    question: "What is the average diagnostic time for patients living with ADH1?",
+  "Average Time to Diagnosis": {
+    question: "True or False: ADH1 is typically diagnosed at birth.",
     answers: [
-      { text: "At birth", correct: false },
-      { text: "3–5 years", correct: false },
-      { text: "20+ years", correct: true }
+      { text: "True", correct: false },
+      { text: "False", correct: true }
     ],
     explanation: "There is a 20-plus-year gap between median age of hypocalcemia diagnosis (4 years) and genetic confirmation of ADH1 (25 years)."
   },
@@ -63,14 +62,12 @@ const quizDataMap: Record<string, QuizData> = {
     explanation: "Genetic testing of the calcium-sensing receptor gene (CASR) can confirm a diagnosis of ADH1."
   },
   "Limitations of Conventional Therapy": {
-    question: "Conventional therapy for hypoparathyroidism involves calcium and activated vitamin D supplements. Why does this regimen fall short?",
+    question: "True or False: Conventional therapy for hypoparathyroidism (calcium supplements and activated Vitamin D) also effectively treats ADH1.",
     answers: [
-      { text: "It does not address continued CaSR dysfunction in the kidneys", correct: false },
-      { text: "It may increase hypercalciuria", correct: false },
-      { text: "Some patients' symptoms remain uncontrolled", correct: false },
-      { text: "All of the above", correct: true }
+      { text: "True", correct: false },
+      { text: "False", correct: true }
     ],
-    explanation: "Conventional therapy does not address the underlying CaSR dysfunction. It may exacerbate hypercalciuria and contribute to long-term renal complications such as kidney stones, calcification, and kidney failure."
+    explanation: "Conventional therapy does not address the underlying CaSR dysfunction in ADH1. It may exacerbate hypercalciuria and contribute to long-term renal complications such as kidney stones, calcification, and kidney failure."
   }
 };
 
@@ -181,7 +178,7 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
             background: `radial-gradient(circle 280px at ${mousePosition.x}px ${mousePosition.y}px, 
                          transparent 0%, 
                          transparent 40%, 
-                         rgba(26, 26, 28, 0.85) 100%)`
+                         rgba(0, 0, 0, 0.7) 100%)`
           }}
         />
       )}
@@ -211,7 +208,7 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                 animate={{ 
                   y: 0, 
                   opacity: shouldDim ? 0.3 : 1,
-                  scale: isSelected && isCorrect ? 1.02 : 1
+                  scale: isSelected ? 1.02 : 1
                 }}
                 transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
                 onClick={() => handleAnswerSelect(answer.text)}
@@ -220,7 +217,9 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                            text-white text-2xl font-light tracking-wide text-left
                            transition-all duration-500 overflow-hidden
                            ${!selectedAnswer ? 'hover:bg-[#2a2a2e] cursor-pointer' : 'cursor-default'}
-                           ${isSelected && isCorrect ? 'border-[#d4a574]' : 'border-[#3a3a3e]'}
+                           ${isSelected && isCorrect ? 'border-[#FFC358]' : ''}
+                           ${isSelected && !isCorrect ? 'border-[#d64545]' : ''}
+                           ${!isSelected ? 'border-[#3a3a3e]' : ''}
                 `}
               >
                 {/* Glow effect for correct answer */}
@@ -229,7 +228,17 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6 }}
-                    className="absolute inset-0 bg-gradient-to-r from-[#d4a574]/20 via-[#d4a574]/10 to-transparent"
+                    className="absolute inset-0 bg-gradient-to-r from-[#FFC358]/20 via-[#FFC358]/10 to-transparent"
+                  />
+                )}
+                
+                {/* Glow effect for incorrect answer */}
+                {isSelected && !isCorrect && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6 }}
+                    className="absolute inset-0 bg-gradient-to-r from-[#d64545]/20 via-[#d64545]/10 to-transparent"
                   />
                 )}
                 
@@ -261,7 +270,7 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
               transition={{ duration: 0.6 }}
               className="text-center"
             >
-              <p className="text-xl font-light text-gray-300 leading-relaxed max-w-3xl mx-auto mb-12">
+              <p className="text-2xl font-bold text-[#FFC358] leading-relaxed mb-12 text-left">
                 {quizData ? quizData.explanation : "There is a 20-plus-year gap between median age of diagnosis for hypocalcemia-related disorder (4 years) and genetic confirmation of ADH1 (25 years)."}
               </p>
 
@@ -272,8 +281,8 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.5 }}
                   onClick={handleNextClick}
-                  className="group relative bg-[#d4a574] border border-[#d4a574] rounded-lg px-10 py-4
-                             text-[#1a1a1c] hover:bg-[#e4b584] transition-all duration-400
+                  className="group relative bg-[#FFC358] border border-[#FFC358] rounded-lg px-10 py-4
+                             text-[#1a1a1c] hover:bg-[#ffce75] transition-all duration-400
                              overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent 

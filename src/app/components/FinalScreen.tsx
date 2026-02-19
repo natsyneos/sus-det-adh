@@ -1,5 +1,7 @@
 import { motion } from 'motion/react';
-import bgImage from '../../assets/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
+import bgImage from 'figma:asset/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
+import Layer1 from '../../imports/Layer1';
+import Layer11493 from '../../imports/Layer1-14-93';
 
 interface FinalScreenProps {
   onRestart: () => void;
@@ -31,7 +33,17 @@ export function FinalScreen({ onRestart }: FinalScreenProps) {
         <div className="fog-layer"></div>
       </div>
 
-      <div className="relative z-10 max-w-4xl w-full text-center -mt-[100px]">
+      {/* Corporate logo at bottom right */}
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.6 }}
+        className="absolute bottom-[132px] right-[67px] z-10 w-[320px]"
+      >
+        <Layer1 />
+      </motion.div>
+
+      <div className="relative z-10 max-w-4xl w-full text-center -mt-[250px]">
         {/* Main message */}
         <motion.h2
           initial={{ y: -30, opacity: 0 }}
@@ -55,20 +67,32 @@ export function FinalScreen({ onRestart }: FinalScreenProps) {
             Learn more at <span className="text-[#FFC358]">ADH1.com</span>
           </p>
 
-          <button
-            onClick={onRestart}
-            className="group relative bg-[#252528] border border-[#5a5a5e] rounded-lg px-12 py-5
-                       text-white hover:border-[#7a7a7e] transition-all duration-400
-                       hover:bg-[#2a2a2e] overflow-hidden"
-          >
-            {/* Subtle glow on hover */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#4a4a4e]/20 to-transparent 
-                            opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
-            
-            <span className="relative z-10 text-xl font-light tracking-wide">
-              Back to Start
-            </span>
-          </button>
+          <div className="flex items-center justify-center gap-20">
+            <button
+              onClick={onRestart}
+              className="group relative bg-[#252528] border border-[#5a5a5e] rounded-lg px-12 py-5
+                         text-white hover:border-[#7a7a7e] transition-all duration-400
+                         hover:bg-[#2a2a2e] overflow-hidden"
+            >
+              {/* Subtle glow on hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#4a4a4e]/20 to-transparent 
+                              opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
+              
+              <span className="relative z-10 text-xl font-light tracking-wide">
+                Back to Start
+              </span>
+            </button>
+
+            {/* QR Code CTA */}
+            <div className="flex items-center gap-4">
+              <div className="h-[60px] w-[60px]">
+                <Layer11493 />
+              </div>
+              <p className="text-lg font-light text-gray-300 max-w-[180px] leading-snug text-left">
+                Scan to download<br />the whitepaper
+              </p>
+            </div>
+          </div>
         </motion.div>
       </div>
     </motion.div>
