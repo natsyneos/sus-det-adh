@@ -17,7 +17,7 @@ const topics = [
   "Limitations of Conventional Therapy"
 ];
 
-export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
+export function LandingScreen({ onTopicSelect, lightsOn, onToggleLights }: LandingScreenProps) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [isUserControlling, setIsUserControlling] = useState(false);
@@ -182,7 +182,7 @@ export function LandingScreen({ onTopicSelect }: LandingScreenProps) {
 
       {/* Lights On toggle */}
       <button
-        onClick={() => setLightsOn(prev => !prev)}
+        onClick={onToggleLights}
         className="absolute bottom-6 left-8 z-50 text-xs font-light tracking-widest uppercase opacity-40 hover:opacity-80 transition-opacity duration-300 text-white flex items-center gap-2"
       >
         <span className={`inline-block w-2 h-2 rounded-full border border-white ${lightsOn ? 'bg-white' : 'bg-transparent'}`}></span>
