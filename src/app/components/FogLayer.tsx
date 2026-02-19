@@ -1,4 +1,143 @@
-import { useEffect, useRef } from 'react';
+import { useRef, useMemo } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+
+interface FogShaderProps {
+  spotlightX: number;
+  spotlightY: number;
+  spotlightRadius: number;
+}
+
+function FogMesh({ spotlightX, spotlightY, spotlightRadius }: FogShaderProps) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const { size } = useThree();
+  const timeRef = useRef(0);
+
+  const uniforms = useMemo(() => ({
+    u_time: { value: 0 },
+    u_resolution: { value: new THREE.Vector2(size.width, size.height) },
+    u_spotlight: { value: new THREE.Vector2(spotlightX, size.height - spotlightY) },
+    u_spotlightRadius: { value: spotlightRadius },
+  }), []);
+
+  useFrame((_, delta) => {
+    timeRef.current += delta * 0.3;
+    uniforms.u_time.value = timeRef.current;
+    uniforms.u_resolution.value.set(size.width, size.height);
+    uniforms.u_spotlight.value.set(spotlightX, size.height - spotlightY);
+    uniforms.u_spotlightRadius.value = spotlightRadius;
+  });
+
+  const vertexShader = `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    uniform float u_time;
+    uniform vec2 u_resolution;
+    uniform vec2 u_spotlight;
+    uniform float u_spotlightRadius;
+    varying vec2 vUv;
+
+    // Hash function
+    vec2 hash(vec2 p) {
+      p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+      return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+    }
+
+    // Gradient noise
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(dot(hash(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0)),
+            dot(hash(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0)), u.x),
+        mix(dot(hash(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0)),
+            dot(hash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0)), u.x), u.y);
+    }
+
+    // Fractional Brownian Motion — layered noise for organic look
+    float fbm(vec2 p) {
+      float value = 0.0;
+      float amplitude = 0.5;
+      float frequency = 1.0;
+      for (int i = 0; i < 5; i++) {
+        value += amplitude * noise(p * frequency);
+        frequency *= 2.1;
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    void main() {
+      vec2 uv = vUv;
+      vec2 pixelPos = uv * u_resolution;
+
+      // Animated fog using layered fbm
+      vec2 q = vec2(
+        fbm(uv * 2.5 + vec2(0.0, u_time * 0.12)),
+        fbm(uv * 2.5 + vec2(1.7, u_time * 0.10))
+      );
+
+      vec2 r = vec2(
+        fbm(uv * 2.5 + 4.0 * q + vec2(1.7, 9.2) + u_time * 0.08),
+        fbm(uv * 2.5 + 4.0 * q + vec2(8.3, 2.8) + u_time * 0.06)
+      );
+
+      float f = fbm(uv * 2.5 + 4.0 * r);
+      f = f * 0.5 + 0.5;
+
+      // Spotlight displacement
+      float dist = length(pixelPos - u_spotlight);
+      float repelZone = u_spotlightRadius * 1.6;
+      float spotlightMask = 1.0;
+
+      if (dist < repelZone) {
+        float falloff = 1.0 - smoothstep(0.0, repelZone, dist);
+        spotlightMask = 1.0 - pow(falloff, 1.5);
+        
+        // Warp UVs near spotlight for swirl
+        vec2 dir = normalize(pixelPos - u_spotlight);
+        vec2 tangent = vec2(-dir.y, dir.x);
+        float warpStrength = (1.0 - dist / repelZone) * 0.15;
+        f = fbm((uv + tangent * warpStrength) * 2.5 + 4.0 * r);
+        f = f * 0.5 + 0.5;
+        f *= spotlightMask;
+      }
+
+      // Color — cool blue-grey fog tones
+      vec3 fogColor = mix(
+        vec3(0.65, 0.70, 0.80),
+        vec3(0.80, 0.85, 0.90),
+        f
+      );
+
+      float alpha = f * 0.38 * spotlightMask;
+      alpha = clamp(alpha, 0.0, 1.0);
+
+      gl_FragColor = vec4(fogColor, alpha);
+    }
+  `;
+
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms,
+    transparent: true,
+    depthWrite: false,
+  }), []);
+
+  return (
+    <mesh ref={meshRef} material={material}>
+      <planeGeometry args={[2, 2]} />
+    </mesh>
+  );
+}
 
 interface FogLayerProps {
   spotlightX: number;
@@ -8,168 +147,25 @@ interface FogLayerProps {
 }
 
 export function FogLayer({ spotlightX, spotlightY, spotlightRadius = 280, lightsOn }: FogLayerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animFrameRef = useRef<number>(0);
-  const spotlightRef = useRef({ x: spotlightX, y: spotlightY });
-  const lightsOnRef = useRef(lightsOn);
-  const timeRef = useRef(0);
-
-  useEffect(() => {
-    spotlightRef.current = { x: spotlightX, y: spotlightY };
-  }, [spotlightX, spotlightY]);
-
-  useEffect(() => {
-    lightsOnRef.current = lightsOn;
-  }, [lightsOn]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Noise function — smooth pseudo-random
-    const noise = (x: number, y: number, t: number) => {
-      const X = Math.floor(x) & 255;
-      const Y = Math.floor(y) & 255;
-      const T = Math.floor(t) & 255;
-      return (
-        Math.sin(X * 0.1 + T * 0.05) *
-        Math.cos(Y * 0.1 + T * 0.03) *
-        Math.sin((X + Y) * 0.07 + T * 0.04)
-      );
-    };
-
-    // Smoke puff structure
-    interface Puff {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      homeX: number;
-      homeY: number;
-      size: number;
-      opacity: number;
-      noiseOffsetX: number;
-      noiseOffsetY: number;
-      rotation: number;
-      rotationSpeed: number;
-    }
-
-    const puffs: Puff[] = Array.from({ length: 80 }, () => {
-      const x = Math.random() * window.innerWidth;
-      const y = Math.random() * window.innerHeight;
-      return {
-        x,
-        y,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.2,
-        homeX: x,
-        homeY: y,
-        size: Math.random() * 220 + 140,
-        opacity: Math.random() * 0.09 + 0.04,
-        noiseOffsetX: Math.random() * 100,
-        noiseOffsetY: Math.random() * 100,
-        rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.003,
-      };
-    });
-
-    const draw = () => {
-      if (!canvas || !ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      timeRef.current += 0.008;
-      const t = timeRef.current;
-
-      if (!lightsOnRef.current) {
-        const sx = spotlightRef.current.x;
-        const sy = spotlightRef.current.y;
-        const repelZone = spotlightRadius * 1.8;
-
-        puffs.forEach(p => {
-          // Noise-driven organic drift
-          const nx = noise(p.noiseOffsetX + t, p.noiseOffsetY, t * 0.5);
-          const ny = noise(p.noiseOffsetX, p.noiseOffsetY + t, t * 0.5);
-          p.vx += nx * 0.06;
-          p.vy += ny * 0.04;
-
-          // Spotlight repulsion with swirl
-          const dx = p.x - sx;
-          const dy = p.y - sy;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < repelZone && dist > 0) {
-            const force = Math.pow(1 - dist / repelZone, 1.5) * 4.0;
-            const nx2 = dx / dist;
-            const ny2 = dy / dist;
-            // Tangential swirl component
-            const tx = -ny2;
-            const ty = nx2;
-            p.vx += nx2 * force + tx * force * 0.8;
-            p.vy += ny2 * force + ty * force * 0.8;
-          }
-
-          // Slow return to home
-          p.vx += (p.homeX - p.x) * 0.0006;
-          p.vy += (p.homeY - p.y) * 0.0006;
-
-          // Dampen
-          p.vx *= 0.96;
-          p.vy *= 0.96;
-
-          p.x += p.vx;
-          p.y += p.vy;
-          p.rotation += p.rotationSpeed;
-
-          // Opacity fade inside spotlight
-          let opacity = p.opacity;
-          if (dist < spotlightRadius) {
-            opacity = p.opacity * Math.pow(dist / spotlightRadius, 2);
-          }
-
-          // Draw as rotated ellipse for more organic smoke shape
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.rotation);
-
-          const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
-          gradient.addColorStop(0, `rgba(210, 218, 230, ${opacity})`);
-          gradient.addColorStop(0.3, `rgba(200, 210, 225, ${opacity * 0.7})`);
-          gradient.addColorStop(0.7, `rgba(190, 200, 220, ${opacity * 0.3})`);
-          gradient.addColorStop(1, `rgba(190, 200, 220, 0)`);
-
-          ctx.scale(1, 0.55); // Flatten into horizontal wisps
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = gradient;
-          ctx.fill();
-          ctx.restore();
-        });
-      }
-
-      animFrameRef.current = requestAnimationFrame(draw);
-    };
-
-    animFrameRef.current = requestAnimationFrame(draw);
-
-    return () => {
-      cancelAnimationFrame(animFrameRef.current);
-      window.removeEventListener('resize', resize);
-    };
-  }, [spotlightRadius]);
+  if (lightsOn) return null;
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
       className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 2, opacity: 0.9 }}
-    />
+      style={{ zIndex: 2 }}
+    >
+      <Canvas
+        orthographic
+        camera={{ zoom: 1, position: [0, 0, 1] }}
+        gl={{ alpha: true, antialias: false }}
+        style={{ background: 'transparent' }}
+      >
+        <FogMesh
+          spotlightX={spotlightX}
+          spotlightY={spotlightY}
+          spotlightRadius={spotlightRadius ?? 280}
+        />
+      </Canvas>
+    </div>
   );
 }
