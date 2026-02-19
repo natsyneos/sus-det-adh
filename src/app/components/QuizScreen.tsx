@@ -287,7 +287,7 @@ export function QuizScreen({ topic, onComplete, onNext, onBackToStart }: QuizScr
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent 
                                   opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
-                  <span className="relative z-10 text-lg font-light tracking-wide">
+                  <span className="relative z-10 text-lg font-normal tracking-wide">
                     Next Question
                   </span>
                 </motion.button>
