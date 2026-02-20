@@ -4,7 +4,7 @@ import { LandingScreen } from './components/LandingScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { FinalScreen } from './components/FinalScreen';
 import { PasswordGate } from './components/PasswordGate';
-import finalBgImage from './assets/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
+import finalBgImage from './assets/bf8f2b863e3bdcc5b498287cc66cff8fb490e1d4.png';
 
 type Screen = 'landing' | 'quiz' | 'final';
 
