@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { LandingScreen } from './components/LandingScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { FinalScreen } from './components/FinalScreen';
-import finalBgImage from './assets/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
+import finalBgImage from '../assets/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
 
 type Screen = 'landing' | 'quiz' | 'final';
 
