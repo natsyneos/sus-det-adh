@@ -40,10 +40,6 @@ export function PasswordGate({ children }: PasswordGateProps) {
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center gap-6 w-full max-w-sm px-8"
       >
-        <h1 className="text-2xl font-light tracking-widest uppercase text-white mb-2">
-          SUSPECT & <span className="text-[#FFC358] font-bold">DETECT ADH1</span>
-        </h1>
-
         <p className="text-sm font-light tracking-wide text-gray-400 mb-4">
           Enter password to continue
         </p>
