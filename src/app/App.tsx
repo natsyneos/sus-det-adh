@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { LandingScreen } from './components/LandingScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { FinalScreen } from './components/FinalScreen';
+import finalBgImage from './assets/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
 
 type Screen = 'landing' | 'quiz' | 'final';
 
@@ -21,6 +22,12 @@ export default function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [lightsOn, setLightsOn] = useState(false);
+
+  // Preload final screen image
+  useEffect(() => {
+    const img = new Image();
+    img.src = finalBgImage;
+  }, []);
 
   const handleTopicSelect = (topic: string) => {
     setIsTransitioning(true);
