@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 
 interface PasswordGateProps {
@@ -7,13 +8,16 @@ interface PasswordGateProps {
 
 export function PasswordGate({ children }: PasswordGateProps) {
   const [password, setPassword] = useState('');
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(() => {
+    return sessionStorage.getItem('adh1_unlocked') === 'true';
+  });
   const [error, setError] = useState(false);
 
   const SECRET = 'bridge';
 
   const handleSubmit = () => {
     if (password === SECRET) {
+      sessionStorage.setItem('adh1_unlocked', 'true');
       setUnlocked(true);
       setError(false);
     } else {

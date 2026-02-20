@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { LandingScreen } from './components/LandingScreen';
 import { QuizScreen } from './components/QuizScreen';
 import { FinalScreen } from './components/FinalScreen';
+import { PasswordGate } from './components/PasswordGate';
 import finalBgImage from '../assets/5057818b1ad83dbb2d772c8571a841a2613175ce.png';
 
 type Screen = 'landing' | 'quiz' | 'final';
@@ -67,45 +68,46 @@ export default function App() {
   };
 
   return (
-    <div className="w-full h-screen overflow-hidden bg-[#000000] relative">
-      {/* Transition overlay */}
-      <AnimatePresence>
-        {isTransitioning && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            onAnimationComplete={() => setIsTransitioning(false)}
-            className="fixed inset-0 bg-[#000000] z-50 pointer-events-none"
-          />
-        )}
-      </AnimatePresence>
+    <PasswordGate>
+      <div className="w-full h-screen overflow-hidden bg-[#000000] relative">
+        <AnimatePresence>
+          {isTransitioning && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onAnimationComplete={() => setIsTransitioning(false)}
+              className="fixed inset-0 bg-[#000000] z-50 pointer-events-none"
+            />
+          )}
+        </AnimatePresence>
 
-      <AnimatePresence mode="wait">
-        {currentScreen === 'landing' && (
-          <LandingScreen
-            key="landing"
-            onTopicSelect={handleTopicSelect}
-            lightsOn={lightsOn}
-            onToggleLights={() => setLightsOn(prev => !prev)}
-          />
-        )}
-        {currentScreen === 'quiz' && (
-          <QuizScreen
-            key={`quiz-${currentQuestionIndex}`}
-            topic={selectedTopic}
-            onComplete={handleQuizComplete}
-            onNext={handleNextQuestion}
-            onBackToStart={handleBackToStart}
-            lightsOn={lightsOn}
-            onToggleLights={() => setLightsOn(prev => !prev)}
-          />
-        )}
-        {currentScreen === 'final' && (
-          <FinalScreen key="final" onRestart={handleRestart} />
-        )}
-      </AnimatePresence>
-    </div>
+        <AnimatePresence mode="wait">
+          {currentScreen === 'landing' && (
+            <LandingScreen
+              key="landing"
+              onTopicSelect={handleTopicSelect}
+              lightsOn={lightsOn}
+              onToggleLights={() => setLightsOn(prev => !prev)}
+            />
+          )}
+          {currentScreen === 'quiz' && (
+            <QuizScreen
+              key={`quiz-${currentQuestionIndex}`}
+              topic={selectedTopic}
+              onComplete={handleQuizComplete}
+              onNext={handleNextQuestion}
+              onBackToStart={handleBackToStart}
+              lightsOn={lightsOn}
+              onToggleLights={() => setLightsOn(prev => !prev)}
+            />
+          )}
+          {currentScreen === 'final' && (
+            <FinalScreen key="final" onRestart={handleRestart} />
+          )}
+        </AnimatePresence>
+      </div>
+    </PasswordGate>
   );
 }
